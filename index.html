@@ -16,6 +16,8 @@
 <style>
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
 /* Layout: iOS-Gesundheit-Stil, gruppierter grauer Grund, weiße Karten mit großen Radien, Large Title, Systemblau als einziger Akzent */
 :root{
   --bg:#F2F2F7; --card:#FFFFFF; --ink:#000000; --ink-2:#3C3C43; --ink-3:#8A8A8E; --line:#E5E5EA; --line-2:#C6C6C8; --fill:#EEEEF0;
@@ -569,11 +571,13 @@ async function handleFile(file){
 }
 $('file').addEventListener('change',e=>{handleFile(e.target.files[0]);e.target.value=''});
 $('addLabel').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('file').click()}});
-let dragN=0;
-addEventListener('dragenter',e=>{if([...(e.dataTransfer?.types||[])].includes('Files')){e.preventDefault();dragN++;$('veil').hidden=false}});
-addEventListener('dragover',e=>e.preventDefault());
-addEventListener('dragleave',()=>{if(--dragN<=0){dragN=0;$('veil').hidden=true}});
-addEventListener('drop',e=>{e.preventDefault();dragN=0;$('veil').hidden=true;handleFile(e.dataTransfer?.files?.[0])});
+const veil=$('veil');let veilT=0;
+const hideVeil=()=>{clearTimeout(veilT);veil.hidden=true};
+const hasFiles=e=>[...(e.dataTransfer?.types||[])].includes('Files');
+addEventListener('dragover',e=>{if(!hasFiles(e))return;e.preventDefault();veil.hidden=false;clearTimeout(veilT);veilT=setTimeout(hideVeil,300)});
+addEventListener('dragleave',e=>{if(!e.relatedTarget||e.clientX<=0||e.clientY<=0||e.clientX>=innerWidth||e.clientY>=innerHeight)hideVeil()});
+addEventListener('drop',e=>{e.preventDefault();hideVeil();const f=e.dataTransfer?.files?.[0];if(f)handleFile(f)});
+['dragend','pointerdown','pointermove','keydown','blur'].forEach(ev=>addEventListener(ev,hideVeil));
 $('cancel').onclick=()=>{$('review').hidden=true;draft=null;draftFile=null};
 $('save').onclick=async()=>{
   const r={change:draft?.change||{},periodStart:draft?.periodStart||null};
